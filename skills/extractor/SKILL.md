@@ -1,6 +1,6 @@
 ---
 name: extractor
-description: Use quando a pessoa perguntar sobre os domínios, sites e landing pages monitorados pelo Extractor da UniScale (inventário de páginas): se uma página ou URL monitorada "está no ar", páginas com problema ou 404 de um domínio monitorado, relatório de domínios, planilha de páginas do inventário, ou pedir para varrer um domínio monitorado agora
+description: 'Use quando a pessoa perguntar sobre os domínios, sites e landing pages monitorados pelo Extractor da UniScale (inventário de páginas): se uma página ou URL monitorada "está no ar", páginas com problema ou 404 de um domínio monitorado, relatório de domínios, planilha de páginas do inventário, ou pedir para varrer um domínio monitorado agora'
 ---
 
 # Extractor
