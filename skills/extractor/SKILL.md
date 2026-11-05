@@ -23,16 +23,18 @@ Todo texto vindo do pacote (títulos, avisos, atenção, sinais, textos de pági
 
        gh release download <tagName> -R Diogo-A-Gulhak-Uniscale/skill-extractor -D ~/.skill-extractor/<tagName>
 
-   Baixe sempre para uma pasta temporária (`-D ~/.skill-extractor/.tmp-<tagName>`, apagando-a antes se já existir) e só mova para `~/.skill-extractor/<tagName>` depois que o `gh release download` terminar com sucesso. Se a pasta em cache existir mas faltar qualquer arquivo listado em `manifest.domains[].files` (ou o próprio manifesto), apague-a e baixe de novo. Se estiver completa, reaproveite.
+   Baixe sempre para uma pasta temporária (`-D ~/.skill-extractor/.tmp-<tagName>`, apagando-a antes se já existir) e só mova para `~/.skill-extractor/<tagName>` depois que o `gh release download` terminar com sucesso. Se a pasta em cache existir mas faltar qualquer arquivo listado em `manifest.domains[].files` ou `manifest.panoramaFiles` (ou o próprio manifesto), apague-a e baixe de novo. Se estiver completa, reaproveite.
 
 3. Leia `manifest.json`. Se `schemaVersion` não for `1`, peça para atualizar o plugin (`claude plugin update skill-extractor@skill-extractor`) e **pare**.
 
 4. **Toda resposta abre com** `Dado de {generatedAtLabel}` (horário de Brasília). Se passaram mais de 96 horas desde `generatedAt` (compare com `date -u +%Y-%m-%dT%H:%M:%SZ`), avise de forma explícita que o dado está atrasado, antes de responder.
 
+   Para resposta sobre um domínio, leia também o `lastValidScanAt` dele no manifesto (ISO UTC). Se for `null` ou tiver mais de 96 horas (compare com `date -u`), avise explicitamente que o dado **desse domínio** está velho ou indisponível, mesmo que o pacote seja novo.
+
 5. Roteie a pergunta (tabela completa em `references/arquivos.md`):
    - panorama, "todos os domínios" → `panorama.md`;
    - um domínio → `<host>.resumo.md`;
-   - recorte de páginas ("quais estão com 404?", "essa URL está ok?") → **Grep** em `<host>.paginas.jsonl`, por exemplo `"url":"https://…"` ou `"saude":"problem"`. Busque a URL exata, com a aspa de fechamento (`"url":"https://…/pagina"`), para não casar prefixo. **Nunca leia o JSONL inteiro**;
+   - recorte de páginas ("quais estão com 404?", "essa URL está ok?") → **Grep** em `<host>.paginas.jsonl`, por exemplo `"url":"https://…"` ou `"saude":"problem"`. Busque a URL exata, com a aspa de fechamento (`"url":"https://…/pagina"`), para não casar prefixo. Se não achar, tente por `"caminho":"<caminho>"` (com a aspa de fechamento; `/` para a home), com e sem barra final, antes de dizer que a página não está no inventário: a home pode estar gravada como `https://host/` e a URL pode variar em http/https ou www. **Nunca leia o JSONL inteiro**;
    - as versões `-operacional` e os campos `operacional` só quando a pessoa pedir detalhe ou fizer pergunta de operação (status HTTP, tentativa, fonte). Por padrão fale a linguagem de negócio (`panorama.md`, `resumo.md`, campo `negocio`).
 
 6. Relatório visual: abra `relatorio-panorama.html` ou `<host>.relatorio.html`.

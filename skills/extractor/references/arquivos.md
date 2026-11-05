@@ -23,7 +23,7 @@ CSV vazio traz só o cabeçalho: significa que não há linha naquele recorte. N
 
 ## manifest.json
 
-`schemaVersion` (1), `generatedAt` (ISO UTC), `generatedAtLabel` (Brasília, para citar), `timeZone`, `extractorCommit`, `domains[]` com `hostname`, `lastScanLabel`, `lastScanOutcomeLabel` e `files` (os arquivos do domínio).
+`schemaVersion` (1), `generatedAt` (ISO UTC), `generatedAtLabel` (Brasília, para citar), `timeZone`, `extractorCommit`, `panoramaFiles` (os arquivos de panorama) e `domains[]` com `hostname`, `lastScanLabel`, `lastValidScanAt` (ISO UTC da última análise válida do domínio, ou `null` se nunca teve), `lastScanOutcomeLabel` e `files` (os arquivos do domínio, incluindo o relatório HTML). O pacote pode ser novo e o dado de um domínio velho: confira `lastValidScanAt`. A cópia em cache está completa quando existem `manifest.json`, todos os `panoramaFiles` e todos os `domains[].files`.
 
 ## `<host>.paginas.jsonl`
 
@@ -46,6 +46,11 @@ Uma URL (use o endereço exato que a pessoa deu):
     (a aspa final é obrigatória: sem ela casaria também /inscricoes-obrigada-2)
     arquivo: <host>.paginas.jsonl
 
+Se não achar, procure pelo caminho, também com a aspa final (home é `/`), com e sem barra final:
+
+    pattern: "caminho":"/inscricoes-obrigada"
+    pattern: "caminho":"/inscricoes-obrigada/"
+
 Páginas com problema real (ou troque `problem` por `unvalidated`):
 
     pattern: "saude":"problem"
@@ -56,4 +61,4 @@ Páginas de um caminho:
     pattern: "caminho":"/blog
     arquivo: <host>.paginas.jsonl
 
-Sem resultado no Grep da URL significa que a página não está no inventário: diga isso, não presuma que está no ar nem fora dele.
+Só depois de a URL exata e o caminho (com e sem barra final) não acharem nada, a conclusão é que a página não está no inventário: diga isso, não presuma que está no ar nem fora dele.
