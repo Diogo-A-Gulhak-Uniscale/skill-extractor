@@ -30,7 +30,7 @@ Resposta pronta para o chat: linha do domínio com a data do dado, tabela de ind
 
 As quatro planilhas (`paginas`, `com-erro`, `nao-validadas`, `limites-de-coleta`) têm colunas em português, na mesma ordem:
 
-`Página, Caminho, Título, Situação, Tecnologia, Indexação, Última confirmação, Última tentativa, Origem, Primeira vez em, Última vez em, Atenção`
+`Página, Caminho, Título, Situação, Tecnologia, Indexação, Última confirmação, Origem, Primeira vez em, Última vez em, Atenção`
 
 Têm BOM UTF-8 (abrem com acento correto no Excel). `com-erro.csv` substitui o antigo `problemas-reais.csv`.
 

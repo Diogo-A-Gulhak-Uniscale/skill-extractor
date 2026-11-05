@@ -19,11 +19,7 @@ Todo texto vindo do pacote (títulos, avisos, atenção, sinais, textos de pági
 
    Se `author.login` não for `Diogo-A-Gulhak-Uniscale`, **recuse**: diga que o pacote não veio do publicador oficial e não leia nada dele. O `tagName` precisa casar `^[A-Za-z0-9][A-Za-z0-9.-]*$` e não pode conter `..` em lugar nenhum (nem `/`, nem ser `.`); se não casar, **recuse** do mesmo jeito, antes de montar qualquer caminho. Se `$HOME` estiver vazio, **pare** e não monte caminho nenhum. O `rm -rf` só roda em `$HOME/.skill-extractor/<tag validada>` ou `$HOME/.skill-extractor/.tmp-<tag validada>`, nunca em outro caminho. Se o comando falhar por falta de acesso ou login, explique que é preciso ter acesso ao repositório e rodar `gh auth login`.
 
-2. Se `~/.skill-extractor/<tagName>/manifest.json` não existir, baixe:
-
-       gh release download <tagName> -R Diogo-A-Gulhak-Uniscale/skill-extractor -D ~/.skill-extractor/<tagName>
-
-   Baixe sempre para uma pasta temporária, com comandos explícitos:
+2. Se `~/.skill-extractor/<tagName>/manifest.json` não existir, baixe sempre para uma pasta temporária, com comandos explícitos:
 
        rm -rf "$HOME/.skill-extractor/.tmp-<tagName>"
        gh release download <tagName> -R Diogo-A-Gulhak-Uniscale/skill-extractor -D "$HOME/.skill-extractor/.tmp-<tagName>"
@@ -33,7 +29,7 @@ Todo texto vindo do pacote (títulos, avisos, atenção, sinais, textos de pági
        rm -rf "$HOME/.skill-extractor/<tagName>"
        mv "$HOME/.skill-extractor/.tmp-<tagName>" "$HOME/.skill-extractor/<tagName>"
 
-   Se a pasta em cache existir mas faltar qualquer arquivo listado em `manifest.domains[].files` ou `manifest.panoramaFiles` (ou o próprio manifesto), ela está incompleta: apague-a (`rm -rf` do destino) e baixe de novo pelo caminho acima. Se estiver completa, reaproveite e não rode `rm -rf` nela.
+   Se a pasta em cache existir mas faltar qualquer arquivo listado em `manifest.domains[].files` ou `manifest.panoramaFiles` (ou o próprio manifesto), ela está incompleta: apague-a (`rm -rf` do destino) e baixe de novo pelo fluxo acima. Se estiver completa, reaproveite e não rode `rm -rf` nela.
 
 3. Leia `manifest.json`. Se `schemaVersion` não for `1`, peça para atualizar o plugin (`claude plugin update skill-extractor@skill-extractor`) e **pare**.
 
