@@ -47,7 +47,7 @@ Uma página por linha, JSON. Chaves:
 - `titulo`: título da página, ou `null`;
 - `saude`: `available` (disponível), `problem` (problema real, status 400 ou mais na última validação confiável) ou `unvalidated` (ainda sem validação confiável);
 - `coleta`: `"limitada"` quando a coleta não conseguiu ler a página (limite de coleta, não página quebrada), ou `null`;
-- `negocio`: texto para negócio (`situacao`, `plataforma`, `seo`, `analise`, `analiseEm`, `origem`, `disponibilidade`, `avisos`, `atencao`, `sinais`, entre outros). Use por padrão;
+- `negocio`: texto para negócio (`situacao`, `plataforma`, `seo`, `indexacao`, `analise`, `analiseEm`, `origem`, `disponibilidade`, `avisos`, `atencao`, `sinais`, entre outros). Pergunta sobre indexação ("a página aparece no Google?") lê `indexacao`, nunca `seo`. Use por padrão;
 - `operacional`: o mesmo com termos de operação (`statusHttp`, `tentativa`, `tentativaEm` etc.). Use só quando pedirem detalhe.
 
 `unvalidated` não é "quebrada": a coleta ainda não conseguiu confirmar. Não diga que a página caiu.
