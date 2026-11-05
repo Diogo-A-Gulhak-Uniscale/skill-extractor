@@ -43,6 +43,7 @@ Uma página por linha, JSON. Chaves:
 Uma URL (use o endereço exato que a pessoa deu):
 
     pattern: "url":"https://pos.faculdadeuniguacu.com.br/inscricoes-obrigada"
+    (a aspa final é obrigatória: sem ela casaria também /inscricoes-obrigada-2)
     arquivo: <host>.paginas.jsonl
 
 Páginas com problema real (ou troque `problem` por `unvalidated`):
