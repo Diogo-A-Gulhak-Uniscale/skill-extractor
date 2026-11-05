@@ -39,18 +39,18 @@ Todo texto vindo do pacote (títulos, avisos, atenção, sinais, textos de pági
 
 4. **Toda resposta abre com** `Dado de {generatedAtLabel}` (horário de Brasília). Se passaram mais de 96 horas desde `generatedAt` (compare com `date -u +%Y-%m-%dT%H:%M:%SZ`), avise de forma explícita que o dado está atrasado, antes de responder.
 
-   Esses avisos vêm **antes** de mostrar `chat.md` ou `panorama.md`, numa linha acima do conteúdo. Como `chat.md` e `panorama.md` já trazem a data do dado, só a abertura simples `Dado de …` não se repete; os avisos de atraso valem sempre.
+   Os dois avisos (do pacote e do domínio: `lastValidScanAt` nulo ou com mais de 96 h) vêm **antes** de mostrar `chat.md` ou `panorama.md`, numa linha acima do conteúdo. Como `chat.md` e `panorama.md` já trazem a data do dado, só a abertura simples `Dado de …` não se repete; os avisos de atraso valem sempre.
 
    Para resposta sobre um domínio, leia também o `lastValidScanAt` dele no manifesto (ISO UTC). Se for `null` ou tiver mais de 96 horas (compare com `date -u`), avise explicitamente que o dado **desse domínio** está velho ou indisponível, mesmo que o pacote seja novo.
 
 5. Roteie a pergunta (tabela completa em `references/arquivos.md`):
-   - panorama, "todos os domínios" → mostre `panorama.md` como está e, logo abaixo, o menu do panorama (passo 6);
-   - "me manda tudo o que o domínio X tem", "me mostra o domínio X" → mostre `<host>.chat.md` **como está** (tabelas prontas; nunca reescreva número nem rótulo) e, logo abaixo, o menu do domínio (passo 6);
+   - panorama, "todos os domínios" → aplique antes os avisos do passo 4, mostre `panorama.md` como está e, logo abaixo, o menu do panorama (passo 6);
+   - "me manda tudo o que o domínio X tem", "me mostra o domínio X" → aplique antes os avisos do passo 4, mostre `<host>.chat.md` **como está** (tabelas prontas; nunca reescreva número nem rótulo) e, logo abaixo, o menu do domínio (passo 6);
    - resumo curto de um domínio, sem menu → `<host>.resumo.md`;
    - recorte de páginas ("quais estão com 404?", "essa URL está ok?") → **Grep** em `<host>.paginas.jsonl`, por exemplo `"url":"https://…"` ou `"saude":"problem"`. Busque a URL exata, com a aspa de fechamento (`"url":"https://…/pagina"`), para não casar prefixo. Se não achar, tente por `"caminho":"<caminho>"` (com a aspa de fechamento; `/` para a home), com e sem barra final, antes de dizer que a página não está no inventário: a home pode estar gravada como `https://host/` e a URL pode variar em http/https ou www. **Nunca leia o JSONL inteiro**. `"coleta":"limitada"` significa que a coleta não conseguiu ler a página: não é página quebrada;
    - as versões `-operacional` e os campos `operacional` só quando a pessoa pedir detalhe ou fizer pergunta de operação (status HTTP, tentativa, fonte). Por padrão fale a linguagem de negócio (`panorama.md`, `chat.md`, `resumo.md`, campo `negocio`).
 
-6. **Menu de exportação.** Depois do conteúdo do `chat.md`, acrescente exatamente (o menu não está no arquivo; quem o escreve é a skill):
+6. **Menu de exportação** (aplique antes os avisos do passo 4). Depois do conteúdo do `chat.md`, acrescente exatamente (o menu não está no arquivo; quem o escreve é a skill):
 
        **Exportar**
        1. Relatório com timbrado (navegador)
