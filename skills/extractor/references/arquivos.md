@@ -8,18 +8,31 @@ Pacote em `~/.skill-extractor/<tagName>/`, pasta plana. `<host>` é o `hostname`
 | --- | --- | --- |
 | "me mostra todos os domínios", panorama | `panorama.md` | < 1 KB por domínio |
 | panorama com detalhe de operação | `panorama-operacional.md` | idem |
-| "me mostra o domínio X" | `<host>.resumo.md` | ~1 KB |
+| "me manda tudo do domínio X", "me mostra o domínio X" | `<host>.chat.md` + menu de exportação da skill | ≤ 4 KB |
+| resumo curto do domínio X, sem menu | `<host>.resumo.md` | ~1 KB |
 | X com detalhe de operação | `<host>.resumo-operacional.md` | ~1 KB |
 | quais páginas estão com 404, com problema, sem análise; "essa URL está ok?" | Grep em `<host>.paginas.jsonl` | ~1,3 KB por página; nunca ler inteiro |
 | relatório visual de todos | `relatorio-panorama.html` | ~120 KB; só abrir no navegador |
 | relatório visual de um domínio | `<host>.relatorio.html` | ~120 KB; só abrir no navegador |
 | planilha de todas as páginas | `<host>.paginas.csv` | copiar para Downloads |
-| planilha só de problemas reais | `<host>.problemas-reais.csv` | idem |
+| planilha só das páginas com erro | `<host>.com-erro.csv` | idem |
 | planilha do que não foi validado | `<host>.nao-validadas.csv` | idem |
 | planilha do que a coleta não conseguiu ler | `<host>.limites-de-coleta.csv` | idem |
 | quais domínios existem, data do dado | `manifest.json` | < 1 KB |
 
 CSV vazio traz só o cabeçalho: significa que não há linha naquele recorte. Não é erro.
+
+## `<host>.chat.md`
+
+Resposta pronta para o chat: linha do domínio com a data do dado, tabela de indicadores (páginas encontradas, no ar, com erro, ainda não analisadas, liberadas para o Google, tecnologia, o que mudou, última análise) e tabela de páginas (com erro primeiro, até 20). Até 4 KB. **Não traz o menu de exportação**: a skill o acrescenta (ver `SKILL.md`, passo 6). Mostre como está, sem reescrever número nem rótulo.
+
+## Planilhas (CSV)
+
+As quatro planilhas (`paginas`, `com-erro`, `nao-validadas`, `limites-de-coleta`) têm colunas em português, na mesma ordem:
+
+`Página, Caminho, Título, Situação, Tecnologia, Indexação, Última confirmação, Última tentativa, Origem, Primeira vez em, Última vez em, Atenção`
+
+Têm BOM UTF-8 (abrem com acento correto no Excel). `com-erro.csv` substitui o antigo `problemas-reais.csv`.
 
 ## manifest.json
 
@@ -33,6 +46,7 @@ Uma página por linha, JSON. Chaves:
 - `caminho`: parte do endereço depois do host;
 - `titulo`: título da página, ou `null`;
 - `saude`: `available` (disponível), `problem` (problema real, status 400 ou mais na última validação confiável) ou `unvalidated` (ainda sem validação confiável);
+- `coleta`: `"limitada"` quando a coleta não conseguiu ler a página (limite de coleta, não página quebrada), ou `null`;
 - `negocio`: texto para negócio (`situacao`, `plataforma`, `seo`, `analise`, `analiseEm`, `origem`, `disponibilidade`, `avisos`, `atencao`, `sinais`, entre outros). Use por padrão;
 - `operacional`: o mesmo com termos de operação (`statusHttp`, `tentativa`, `tentativaEm` etc.). Use só quando pedirem detalhe.
 

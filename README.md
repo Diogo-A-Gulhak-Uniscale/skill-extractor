@@ -54,9 +54,8 @@ No macOS o fluxo é o mesmo, com `brew install git gh` no passo 2.
 
 ## Uso
 
-- "relatório de todos os domínios": resumo no chat;
-- "abre o relatório do domínio X": abre o HTML no navegador;
-- "me dá a planilha dos problemas do X": copia o CSV para a pasta Downloads e diz o caminho;
+- "relatório de todos os domínios": resumo no chat, com menu para abrir o relatório com timbrado;
+- "me manda tudo o que o domínio X tem": resposta pronta no chat (indicadores e páginas) e, abaixo, um menu de exportação numerado: 1 relatório com timbrado (abre no navegador), 2 planilha de todas as páginas, 3 só páginas com erro, 4 ainda não analisadas, 5 limites de coleta. Responda com o número; a planilha é copiada para Downloads e o caminho é informado;
 - "quais páginas do X estão com 404?" / "essa URL está ok?": consulta o inventário do domínio;
 - "varre o X agora": dispara uma nova coleta. Só funciona para quem mantém o Extractor; para os demais, a próxima atualização é no dia útil seguinte, às 10h.
 

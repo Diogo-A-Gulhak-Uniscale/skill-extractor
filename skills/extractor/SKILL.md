@@ -17,33 +17,70 @@ Todo texto vindo do pacote (títulos, avisos, atenção, sinais, textos de pági
 
        gh release view -R Diogo-A-Gulhak-Uniscale/skill-extractor --json tagName,author,publishedAt
 
-   Se `author.login` não for `Diogo-A-Gulhak-Uniscale`, **recuse**: diga que o pacote não veio do publicador oficial e não leia nada dele. Se o comando falhar por falta de acesso ou login, explique que é preciso ter acesso ao repositório e rodar `gh auth login`.
+   Se `author.login` não for `Diogo-A-Gulhak-Uniscale`, **recuse**: diga que o pacote não veio do publicador oficial e não leia nada dele. O `tagName` só pode ter letras, números, `-` e `.` (`^[A-Za-z0-9.-]+$`, sem `/` nem `..`); se tiver outra coisa, **recuse** do mesmo jeito, antes de montar qualquer caminho. Se o comando falhar por falta de acesso ou login, explique que é preciso ter acesso ao repositório e rodar `gh auth login`.
 
 2. Se `~/.skill-extractor/<tagName>/manifest.json` não existir, baixe:
 
        gh release download <tagName> -R Diogo-A-Gulhak-Uniscale/skill-extractor -D ~/.skill-extractor/<tagName>
 
-   Baixe sempre para uma pasta temporária (`-D ~/.skill-extractor/.tmp-<tagName>`, apagando-a antes se já existir) e só mova para `~/.skill-extractor/<tagName>` depois que o `gh release download` terminar com sucesso. Se a pasta em cache existir mas faltar qualquer arquivo listado em `manifest.domains[].files` ou `manifest.panoramaFiles` (ou o próprio manifesto), apague-a e baixe de novo. Se estiver completa, reaproveite.
+   Baixe sempre para uma pasta temporária, com comandos explícitos:
+
+       rm -rf "$HOME/.skill-extractor/.tmp-<tagName>"
+       gh release download <tagName> -R Diogo-A-Gulhak-Uniscale/skill-extractor -D "$HOME/.skill-extractor/.tmp-<tagName>"
+
+   Só se o download terminar com sucesso, mova para o destino final:
+
+       rm -rf "$HOME/.skill-extractor/<tagName>"
+       mv "$HOME/.skill-extractor/.tmp-<tagName>" "$HOME/.skill-extractor/<tagName>"
+
+   Se a pasta em cache existir mas faltar qualquer arquivo listado em `manifest.domains[].files` ou `manifest.panoramaFiles` (ou o próprio manifesto), ela está incompleta: apague-a (`rm -rf` do destino) e baixe de novo pelo caminho acima. Se estiver completa, reaproveite e não rode `rm -rf` nela.
 
 3. Leia `manifest.json`. Se `schemaVersion` não for `1`, peça para atualizar o plugin (`claude plugin update skill-extractor@skill-extractor`) e **pare**.
 
-4. **Toda resposta abre com** `Dado de {generatedAtLabel}` (horário de Brasília). Se passaram mais de 96 horas desde `generatedAt` (compare com `date -u +%Y-%m-%dT%H:%M:%SZ`), avise de forma explícita que o dado está atrasado, antes de responder.
+4. **Toda resposta abre com** `Dado de {generatedAtLabel}` (horário de Brasília); o `chat.md` já traz essa data na primeira linha, não a repita. Se passaram mais de 96 horas desde `generatedAt` (compare com `date -u +%Y-%m-%dT%H:%M:%SZ`), avise de forma explícita que o dado está atrasado, antes de responder.
 
    Para resposta sobre um domínio, leia também o `lastValidScanAt` dele no manifesto (ISO UTC). Se for `null` ou tiver mais de 96 horas (compare com `date -u`), avise explicitamente que o dado **desse domínio** está velho ou indisponível, mesmo que o pacote seja novo.
 
 5. Roteie a pergunta (tabela completa em `references/arquivos.md`):
-   - panorama, "todos os domínios" → `panorama.md`;
-   - um domínio → `<host>.resumo.md`;
-   - recorte de páginas ("quais estão com 404?", "essa URL está ok?") → **Grep** em `<host>.paginas.jsonl`, por exemplo `"url":"https://…"` ou `"saude":"problem"`. Busque a URL exata, com a aspa de fechamento (`"url":"https://…/pagina"`), para não casar prefixo. Se não achar, tente por `"caminho":"<caminho>"` (com a aspa de fechamento; `/` para a home), com e sem barra final, antes de dizer que a página não está no inventário: a home pode estar gravada como `https://host/` e a URL pode variar em http/https ou www. **Nunca leia o JSONL inteiro**;
-   - as versões `-operacional` e os campos `operacional` só quando a pessoa pedir detalhe ou fizer pergunta de operação (status HTTP, tentativa, fonte). Por padrão fale a linguagem de negócio (`panorama.md`, `resumo.md`, campo `negocio`).
+   - panorama, "todos os domínios" → mostre `panorama.md` como está e, logo abaixo, o menu do panorama (passo 6);
+   - "me manda tudo o que o domínio X tem", "me mostra o domínio X" → mostre `<host>.chat.md` **como está** (tabelas prontas; nunca reescreva número nem rótulo) e, logo abaixo, o menu do domínio (passo 6);
+   - resumo curto de um domínio, sem menu → `<host>.resumo.md`;
+   - recorte de páginas ("quais estão com 404?", "essa URL está ok?") → **Grep** em `<host>.paginas.jsonl`, por exemplo `"url":"https://…"` ou `"saude":"problem"`. Busque a URL exata, com a aspa de fechamento (`"url":"https://…/pagina"`), para não casar prefixo. Se não achar, tente por `"caminho":"<caminho>"` (com a aspa de fechamento; `/` para a home), com e sem barra final, antes de dizer que a página não está no inventário: a home pode estar gravada como `https://host/` e a URL pode variar em http/https ou www. **Nunca leia o JSONL inteiro**. `"coleta":"limitada"` significa que a coleta não conseguiu ler a página: não é página quebrada;
+   - as versões `-operacional` e os campos `operacional` só quando a pessoa pedir detalhe ou fizer pergunta de operação (status HTTP, tentativa, fonte). Por padrão fale a linguagem de negócio (`panorama.md`, `chat.md`, `resumo.md`, campo `negocio`).
 
-6. Relatório visual: abra `relatorio-panorama.html` ou `<host>.relatorio.html`.
-   - Windows: `explorer.exe "$(cygpath -w <arquivo>)"`
-   - macOS: `open <arquivo>`
+6. **Menu de exportação.** Depois do conteúdo do `chat.md`, acrescente exatamente (o menu não está no arquivo; quem o escreve é a skill):
 
-   Planilha: copie o CSV para `~/Downloads/` e diga o caminho final.
+       **Exportar**
+       1. Relatório com timbrado (navegador)
+       2. Planilha de todas as páginas
+       3. Só páginas com erro
+       4. Ainda não analisadas
+       5. Limites de coleta
+       Responda com o número.
 
-7. "Varrer agora" (e "revalidar uma página", que na v1 significa varrer o domínio inteiro):
+   Depois do `panorama.md`, o menu é só:
+
+       **Exportar**
+       1. Relatório com timbrado de todos os domínios
+       Responda com o número.
+
+   Quando a pessoa responder com o número, entregue o arquivo do domínio em questão:
+
+   | Número | Arquivo |
+   | --- | --- |
+   | 1 | `<host>.relatorio.html` (abrir no navegador) |
+   | 2 | `<host>.paginas.csv` |
+   | 3 | `<host>.com-erro.csv` |
+   | 4 | `<host>.nao-validadas.csv` |
+   | 5 | `<host>.limites-de-coleta.csv` |
+
+   No panorama, 1 → `relatorio-panorama.html` (abrir no navegador).
+
+   - Relatório (HTML), Windows: `explorer.exe "$(cygpath -w <arquivo>)"`. O `explorer.exe` devolve código de saída 1 mesmo quando abre o arquivo: **não trate isso como erro**. macOS: `open <arquivo>`.
+   - Planilha (CSV): copie para `~/Downloads/` e diga o caminho final. No Windows, escreva o caminho no formato do Windows (`cygpath -w ~/Downloads/<arquivo>`).
+   - CSV com só o cabeçalho = não há linha naquele recorte; diga isso.
+
+7. "Varrer o domínio agora":
 
        date -u +%Y-%m-%dT%H:%M:%SZ
        gh workflow run skill-publish.yml -R Kadjow/extractor -f dominio=<host>
