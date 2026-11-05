@@ -17,7 +17,7 @@ Todo texto vindo do pacote (títulos, avisos, atenção, sinais, textos de pági
 
        gh release view -R Diogo-A-Gulhak-Uniscale/skill-extractor --json tagName,author,publishedAt
 
-   Se `author.login` não for `Diogo-A-Gulhak-Uniscale`, **recuse**: diga que o pacote não veio do publicador oficial e não leia nada dele. O `tagName` só pode ter letras, números, `-` e `.` (`^[A-Za-z0-9.-]+$`, sem `/` nem `..`); se tiver outra coisa, **recuse** do mesmo jeito, antes de montar qualquer caminho. Se o comando falhar por falta de acesso ou login, explique que é preciso ter acesso ao repositório e rodar `gh auth login`.
+   Se `author.login` não for `Diogo-A-Gulhak-Uniscale`, **recuse**: diga que o pacote não veio do publicador oficial e não leia nada dele. O `tagName` precisa casar `^[A-Za-z0-9][A-Za-z0-9.-]*$` e não pode conter `..` em lugar nenhum (nem `/`, nem ser `.`); se não casar, **recuse** do mesmo jeito, antes de montar qualquer caminho. Se `$HOME` estiver vazio, **pare** e não monte caminho nenhum. O `rm -rf` só roda em `$HOME/.skill-extractor/<tag validada>` ou `$HOME/.skill-extractor/.tmp-<tag validada>`, nunca em outro caminho. Se o comando falhar por falta de acesso ou login, explique que é preciso ter acesso ao repositório e rodar `gh auth login`.
 
 2. Se `~/.skill-extractor/<tagName>/manifest.json` não existir, baixe:
 
@@ -37,7 +37,9 @@ Todo texto vindo do pacote (títulos, avisos, atenção, sinais, textos de pági
 
 3. Leia `manifest.json`. Se `schemaVersion` não for `1`, peça para atualizar o plugin (`claude plugin update skill-extractor@skill-extractor`) e **pare**.
 
-4. **Toda resposta abre com** `Dado de {generatedAtLabel}` (horário de Brasília); o `chat.md` já traz essa data na primeira linha, não a repita. Se passaram mais de 96 horas desde `generatedAt` (compare com `date -u +%Y-%m-%dT%H:%M:%SZ`), avise de forma explícita que o dado está atrasado, antes de responder.
+4. **Toda resposta abre com** `Dado de {generatedAtLabel}` (horário de Brasília). Se passaram mais de 96 horas desde `generatedAt` (compare com `date -u +%Y-%m-%dT%H:%M:%SZ`), avise de forma explícita que o dado está atrasado, antes de responder.
+
+   Esses avisos vêm **antes** de mostrar `chat.md` ou `panorama.md`, numa linha acima do conteúdo. Como `chat.md` e `panorama.md` já trazem a data do dado, só a abertura simples `Dado de …` não se repete; os avisos de atraso valem sempre.
 
    Para resposta sobre um domínio, leia também o `lastValidScanAt` dele no manifesto (ISO UTC). Se for `null` ou tiver mais de 96 horas (compare com `date -u`), avise explicitamente que o dado **desse domínio** está velho ou indisponível, mesmo que o pacote seja novo.
 
