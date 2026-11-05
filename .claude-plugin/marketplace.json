@@ -1,0 +1,12 @@
+{
+  "name": "skill-extractor",
+  "description": "Inventário de páginas públicas da UniScale para Claude Code.",
+  "owner": { "name": "UniScale" },
+  "plugins": [
+    {
+      "name": "skill-extractor",
+      "source": "./",
+      "description": "Responde no chat sobre domínios e páginas monitorados pelo Extractor, abre relatórios e entrega planilhas."
+    }
+  ]
+}
