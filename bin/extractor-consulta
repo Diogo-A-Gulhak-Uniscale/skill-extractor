@@ -1,0 +1,278 @@
+#!/usr/bin/env bash
+# extractor-consulta — responde pelo inventário que o Extractor da UniScale publica, numa chamada só.
+#
+#   extractor-consulta dominio <host>                   resposta pronta do domínio + menu de exportação
+#   extractor-consulta panorama                         todos os domínios + menu
+#   extractor-consulta erros <host>                     páginas com erro
+#   extractor-consulta pagina <host> <url-ou-caminho>   situação de uma página
+#   extractor-consulta detalhe <host>                   resumo na linguagem de operação
+#   extractor-consulta exportar <host|panorama> <1-5>   abre o relatório ou salva a planilha em Downloads
+#
+# Só lê o pacote publicado; nunca acessa o site. Confere o autor da publicação, guarda o pacote em
+# ~/.skill-extractor/<tag> (baixa só quando muda) e põe os avisos de dado atrasado antes do conteúdo.
+
+set -uo pipefail
+
+REPO="Diogo-A-Gulhak-Uniscale/skill-extractor"
+PUBLISHER="Diogo-A-Gulhak-Uniscale"
+STALE_SECONDS=$((96 * 3600))
+
+fail() { printf 'ERRO: %s\n' "$*"; exit 1; }
+usage() { fail "uso: extractor-consulta dominio|panorama|erros|pagina|detalhe|exportar ..."; }
+
+cmd=${1:-}
+[ -n "$cmd" ] || usage
+shift
+case $cmd in
+  dominio|erros|detalhe) [ $# -ge 1 ] || usage ;;
+  pagina|exportar) [ $# -ge 2 ] || usage ;;
+  panorama) ;;
+  *) usage ;;
+esac
+
+[ -n "${HOME:-}" ] || fail "HOME vazio; não sei onde guardar os dados."
+command -v gh >/dev/null 2>&1 || fail "o GitHub CLI (gh) não está instalado. Veja o passo a passo no README do plugin."
+
+# --- a publicação mais recente, conferida antes de qualquer caminho -----------------------------------
+meta=$(gh release view -R "$REPO" --json tagName,author --jq '.tagName + " " + .author.login' 2>/dev/null) \
+  || fail "não consegui ler a publicação. Confira o login ('gh auth status') e o acesso ao repositório $REPO."
+TAG=${meta%% *}
+AUTHOR=${meta#* }
+[[ "$TAG" =~ ^[A-Za-z0-9][A-Za-z0-9.-]*$ && "$TAG" != *..* ]] || fail "a publicação tem um nome inválido ($TAG); não vou usar."
+[ "$AUTHOR" = "$PUBLISHER" ] || fail "a publicação mais recente não veio de $PUBLISHER (veio de $AUTHOR); não vou usar esses dados."
+
+DIR="$HOME/.skill-extractor/$TAG"
+M="$DIR/manifest.json"
+
+complete() {
+  [ -f "$M" ] || return 1
+  local f
+  for f in $(grep -oE '"[^"/]+\.(md|jsonl|csv|html)"' "$M" | tr -d '"'); do
+    [ -f "$DIR/$f" ] || return 1
+  done
+}
+
+if ! complete; then
+  mkdir -p "$DIR"
+  gh release download "$TAG" -R "$REPO" -D "$DIR" --clobber >/dev/null 2>&1 || fail "não consegui baixar a publicação $TAG."
+  complete || fail "a publicação $TAG veio incompleta; tente de novo em instantes."
+fi
+grep -q '"schemaVersion": 1,' "$M" || fail "os dados estão num formato novo. Atualize o plugin: claude plugin update skill-extractor@skill-extractor"
+
+# --- leitura do manifesto (formato fixo, gerado pelo Extractor) ---------------------------------------
+top() { grep -m1 "^  \"$1\":" "$M" | sed -E 's/^[^:]*: "?//; s/"?,?$//'; }
+dom() {
+  awk -v h="\"hostname\": \"$1\"" -v k="\"$2\":" \
+    'index($0, h) { f = 1 } f && index($0, k) { sub(/^[^:]*: /, ""); gsub(/[",]/, ""); print; exit }' "$M"
+}
+HOSTS=$(grep '"hostname":' "$M" | sed -E 's/.*"hostname": "([^"]+)".*/\1/')
+GEN_AT=$(top generatedAt)
+GEN_LABEL=$(top generatedAtLabel)
+NOW=$(date -u +%s)
+
+older() {
+  local t
+  if [ -z "$1" ] || [ "$1" = "null" ]; then return 0; fi
+  t=$(date -u -d "$1" +%s 2>/dev/null) || return 0
+  [ $((NOW - t)) -gt "$STALE_SECONDS" ]
+}
+
+pkg_warning() {
+  if older "$GEN_AT"; then
+    printf 'Atenção: estes dados são de %s, há mais de 4 dias. A atualização automática pode ter falhado; avise quem mantém o Extractor.\n\n' "$GEN_LABEL"
+  fi
+}
+
+dom_warning() {
+  local v
+  v=$(dom "$1" lastValidScanAt)
+  if [ -z "$v" ] || [ "$v" = "null" ]; then
+    printf 'Atenção: o domínio %s ainda não tem uma análise válida.\n\n' "$1"
+  elif older "$v"; then
+    printf 'Atenção: a última análise válida de %s tem mais de 4 dias (%s).\n\n' "$1" "$(dom "$1" lastScanLabel)"
+  fi
+}
+
+norm_host() {
+  local h=${1,,}
+  h=${h#http://}
+  h=${h#https://}
+  h=${h%%/*}
+  h=${h%%\?*}
+  printf '%s' "$h"
+}
+
+resolve_host() {
+  local h c
+  h=$(norm_host "$1")
+  for c in "$h" "www.$h" "${h#www.}"; do
+    if grep -qxF -- "$c" <<<"$HOSTS"; then printf '%s' "$c"; return; fi
+  done
+}
+
+not_monitored() {
+  printf 'O domínio %s não é monitorado pelo Extractor.\n\nDomínios monitorados:\n' "$1"
+  sed 's/^/- /' <<<"$HOSTS"
+  exit 0
+}
+
+host_or_stop() {
+  HOST=$(resolve_host "$1")
+  [ -n "$HOST" ] || not_monitored "$1"
+}
+
+# --- linhas de página (JSONL compacto) -----------------------------------------------------------------
+jget() {
+  grep -oE "\"$2\":\"([^\"\\\\]|\\\\.)*\"" <<<"$1" | head -1 | sed -E "s/^\"$2\":\"//; s/\"\$//; s/\\\\\"/\"/g"
+}
+
+cell() {
+  local v=${1:-—}
+  v=${v//\\n/ }
+  v=${v//|/\\|}
+  printf '%s' "${v:0:120}"
+}
+
+winpath() { if command -v cygpath >/dev/null 2>&1; then cygpath -w "$1"; else printf '%s' "$1"; fi; }
+
+DOMAIN_MENU=$'\n**Exportar**\n1. Relatório com timbrado (navegador)\n2. Planilha de todas as páginas\n3. Só páginas com erro\n4. Ainda não analisadas\n5. Limites de coleta\nResponda com o número.'
+PANORAMA_MENU=$'\n**Exportar**\n1. Relatório com timbrado de todos os domínios\nResponda com o número.'
+
+cmd_dominio() {
+  local host
+  host_or_stop "$1"
+  host=$HOST
+  pkg_warning
+  dom_warning "$host"
+  cat "$DIR/$host.chat.md"
+  printf '%s\n' "$DOMAIN_MENU"
+}
+
+cmd_panorama() {
+  pkg_warning
+  cat "$DIR/panorama.md"
+  printf '%s\n' "$PANORAMA_MENU"
+}
+
+cmd_detalhe() {
+  local host
+  host_or_stop "$1"
+  host=$HOST
+  pkg_warning
+  dom_warning "$host"
+  cat "$DIR/$host.resumo-operacional.md"
+}
+
+cmd_erros() {
+  local host lines n
+  host_or_stop "$1"
+  host=$HOST
+  pkg_warning
+  dom_warning "$host"
+  lines=$(grep -F '"saude":"problem"' "$DIR/$host.paginas.jsonl" || true)
+  printf 'Dado de %s (horário de Brasília).\n\n' "$GEN_LABEL"
+  if [ -z "$lines" ]; then
+    printf 'Nenhuma página de %s está com erro.\n' "$host"
+    return
+  fi
+  n=$(grep -c . <<<"$lines")
+  printf '**%s com erro em %s**' "$([ "$n" -eq 1 ] && echo '1 página' || echo "$n páginas")" "$host"
+  [ "$n" -gt 50 ] && printf ' (as 50 primeiras)'
+  printf '\n\n| Página | Situação | Título |\n|---|---|---|\n'
+  head -50 <<<"$lines" | while IFS= read -r l; do
+    printf '| %s | %s | %s |\n' "$(cell "$(jget "$l" caminho)")" "$(cell "$(jget "$l" situacao)")" "$(cell "$(jget "$l" titulo)")"
+  done
+  printf '\nA lista completa sai na planilha (opção 3).\n%s\n' "$DOMAIN_MENU"
+}
+
+cmd_pagina() {
+  local host ref path line p f
+  host_or_stop "$1"
+  host=$HOST
+  ref=$2
+  f="$DIR/$host.paginas.jsonl"
+  line=""
+  if [[ "$ref" =~ ^https?:// ]]; then
+    for p in "$ref" "${ref%/}" "${ref%/}/"; do
+      line=$(grep -F "\"url\":\"$p\"" "$f" | head -1)
+      [ -n "$line" ] && break
+    done
+    path=$(sed -E 's#^https?://[^/]+##; s#[?#].*$##' <<<"$ref")
+  else
+    path=$ref
+  fi
+  [ -n "$path" ] || path="/"
+  [[ "$path" == /* ]] || path="/$path"
+  if [ -z "$line" ]; then
+    for p in "$path" "${path%/}" "${path%/}/"; do
+      [ -n "$p" ] || p="/"
+      line=$(grep -F "\"caminho\":\"$p\"" "$f" | head -1)
+      [ -n "$line" ] && break
+    done
+  fi
+  pkg_warning
+  dom_warning "$host"
+  printf 'Dado de %s (horário de Brasília).\n\n' "$GEN_LABEL"
+  if [ -z "$line" ]; then
+    printf 'A página %s não está no inventário de %s.\n' "$ref" "$host"
+    return
+  fi
+  printf '**%s**\n\n| Campo | Valor |\n|---|---|\n' "$(jget "$line" url)"
+  printf '| Título | %s |\n' "$(cell "$(jget "$line" titulo)")"
+  printf '| Situação | %s |\n' "$(cell "$(jget "$line" situacao)")"
+  printf '| Google | %s |\n' "$(cell "$(jget "$line" indexacao)")"
+  printf '| Tecnologia | %s |\n' "$(cell "$(jget "$line" plataforma)")"
+  printf '| Última análise | %s |\n' "$(cell "$(jget "$line" analiseEm)")"
+  printf '| Atenção | %s |\n' "$(cell "$(jget "$line" atencao)")"
+  if grep -qF '"coleta":"limitada"' <<<"$line"; then
+    printf '\nA última coleta desta página foi limitada (o site limitou o acesso). Isso não quer dizer que a página está quebrada.\n'
+  fi
+}
+
+cmd_exportar() {
+  local alvo=$1 n=$2 host file src dest
+  if [ "$alvo" = "panorama" ]; then
+    [ "$n" = "1" ] || fail "no panorama só existe a opção 1."
+    file="relatorio-panorama.html"
+  else
+    host_or_stop "$alvo"
+    host=$HOST
+    case $n in
+      1) file="$host.relatorio.html" ;;
+      2) file="$host.paginas.csv" ;;
+      3) file="$host.com-erro.csv" ;;
+      4) file="$host.nao-validadas.csv" ;;
+      5) file="$host.limites-de-coleta.csv" ;;
+      *) fail "a opção $n não existe; escolha de 1 a 5." ;;
+    esac
+  fi
+  src="$DIR/$file"
+  if [[ "$file" == *.html ]]; then
+    if command -v cygpath >/dev/null 2>&1; then
+      explorer.exe "$(cygpath -w "$src")" || true   # o explorer.exe devolve 1 mesmo quando abre
+    elif command -v open >/dev/null 2>&1; then
+      open "$src"
+    else
+      xdg-open "$src" >/dev/null 2>&1 || true
+    fi
+    printf 'Relatório aberto no navegador. O arquivo fica em: %s\n' "$(winpath "$src")"
+  else
+    dest="$HOME/Downloads"
+    mkdir -p "$dest"
+    cp "$src" "$dest/$file" || fail "não consegui salvar a planilha em $(winpath "$dest")."
+    if [ "$(grep -c . "$src")" -le 1 ]; then
+      printf 'Planilha salva em %s. Ela só tem o cabeçalho: não há páginas nesse recorte.\n' "$(winpath "$dest/$file")"
+    else
+      printf 'Planilha salva em %s (abre no Excel).\n' "$(winpath "$dest/$file")"
+    fi
+  fi
+}
+
+case $cmd in
+  dominio) cmd_dominio "$1" ;;
+  panorama) cmd_panorama ;;
+  erros) cmd_erros "$1" ;;
+  pagina) cmd_pagina "$1" "$2" ;;
+  detalhe) cmd_detalhe "$1" ;;
+  exportar) cmd_exportar "$1" "$2" ;;
+esac

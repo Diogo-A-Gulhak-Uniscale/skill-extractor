@@ -61,6 +61,12 @@ No macOS o fluxo é o mesmo, com `brew install git gh` no passo 2.
 
 Toda resposta começa com a data do dado. Se o dado tiver mais de 96 horas, a resposta avisa que está atrasado.
 
+Por trás, a skill roda um comando só, `extractor-consulta`, que vem com o plugin: confere quem
+publicou, baixa o pacote quando ele muda e devolve a resposta pronta. Por isso cada pergunta leva
+poucos segundos e gasta pouco da sua cota do Claude (a skill responde no modelo Sonnet). Se o
+Claude Code pedir permissão para rodar `extractor-consulta`, escolha a opção de não perguntar de
+novo.
+
 ## Erros comuns
 
 | O que aparece | O que é | O que fazer |
@@ -70,6 +76,7 @@ Toda resposta começa com a data do dado. Se o dado tiver mais de 96 horas, a re
 | "pacote não veio do publicador oficial" | A Release não foi publicada pela conta esperada | Avise quem mantém o Extractor |
 | "atualize o plugin" | O formato do pacote mudou | `claude plugin update skill-extractor@skill-extractor` |
 | "varrer agora" recusado | Só quem mantém o Extractor pode disparar | Aguarde a atualização automática |
+| `extractor-consulta: command not found` | Plugin desatualizado ou Claude Code sem reiniciar | `claude plugin update skill-extractor@skill-extractor` e reabra o Claude Code |
 
 ## Privacidade
 
