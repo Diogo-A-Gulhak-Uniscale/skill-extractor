@@ -1,7 +1,7 @@
 ---
 name: extractor
 description: 'Use quando a pessoa perguntar sobre um domínio, site, landing page ou URL — por exemplo "me manda tudo do domínio X", "o site X está no ar?", "quais páginas do X estão com erro?", "essa página aparece no Google?" —, pedir relatório de domínios ou planilha de páginas, ou pedir para varrer um domínio agora. Responde pelo inventário publicado pelo Extractor da UniScale, sem acessar o site; se o domínio não estiver no inventário, diz isso e lista os monitorados.'
-model: sonnet
+model: claude-sonnet-5-5
 allowed-tools: Bash(extractor-consulta *) Bash(gh workflow run skill-publish.yml *) Bash(gh run list *) Bash(date *)
 ---
 
