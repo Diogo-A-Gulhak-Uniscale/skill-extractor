@@ -87,11 +87,10 @@ if ! complete; then
   [ "$author" = "$PUBLISHER" ] || fail "a publicação mais recente não veio de $PUBLISHER (veio de $author); não vou usar esses dados."
   mkdir -p "$DIR"
   curl -fsSL -o "$M" "$GH/releases/download/$TAG/manifest.json" 2>/dev/null || fail "não consegui baixar a publicação $TAG."
-  args=()
-  for f in $(grep -oE '"[^"/]+\.(md|jsonl|csv|html)"' "$M" | tr -d '"'); do
-    args+=(-o "$DIR/$f" "$GH/releases/download/$TAG/$f")
-  done
-  curl -fsSL --parallel --parallel-max 8 "${args[@]}" 2>/dev/null || fail "não consegui baixar a publicação $TAG."
+  # As URLs vão por stdin (-K -): na linha de comando, 15 domínios já passam do limite do Windows.
+  grep -oE '"[^"/]+\.(md|jsonl|csv|html)"' "$M" | tr -d '"' | sed "s#.*#url = \"$GH/releases/download/$TAG/&\"#" \
+    | curl -fsSL --parallel --parallel-max 8 --output-dir "$DIR" --remote-name-all -K - 2>/dev/null \
+    || fail "não consegui baixar a publicação $TAG."
   complete || fail "a publicação $TAG veio incompleta; tente de novo em instantes."
 fi
 grep -q '"schemaVersion": 1,' "$M" || fail "os dados estão num formato novo. Atualize o plugin: claude plugin update skill-extractor@skill-extractor"
@@ -152,8 +151,11 @@ domain_table() {
   n=$(grep -c . <<<"$HOSTS")
   printf '**%s monitorados pelo Extractor**\n\n| Domínio | Última análise | Resultado |\n|---|---|---|\n' \
     "$([ "$n" -eq 1 ] && echo '1 domínio' || echo "$n domínios")"
+  local l
   while IFS= read -r h; do
-    printf '| %s | %s | %s |\n' "$h" "$(cell "$(dom "$h" lastScanLabel)")" "$(cell "$(dom "$h" lastScanOutcomeLabel)")"
+    l=$(dom "$h" lastScanLabel)
+    [ "$l" = "null" ] && l="Nenhuma análise completa"   # mesmo texto do resumo do domínio
+    printf '| %s | %s | %s |\n' "$h" "$(cell "$l")" "$(cell "$(dom "$h" lastScanOutcomeLabel)")"
   done <<<"$HOSTS"
   printf '\nQuer incluir um domínio ou subdomínio? Peça aqui mesmo (por exemplo: "quero incluir o domínio exemplo.com.br") que eu preparo o pedido por e-mail para quem mantém o Extractor.\n'
 }

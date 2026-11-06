@@ -39,7 +39,7 @@ Escreva do seu jeito; estes são exemplos.
 | "me mostra o domínio www.uniguacu.com.br" | indicadores do domínio, as páginas (com erro primeiro) e o menu de exportação |
 | "relatório de todos os domínios" | o panorama de todos e o relatório com timbrado |
 | "quais páginas do uniguacu.com.br estão com erro?" | as páginas que devolvem erro na última análise |
-| "a página https://www.uniguacu.com.br/vestibular está no ar?" | a situação daquela página: no ar, título, Google, tecnologia |
+| "a página https://www.uniguacu.com.br/ está no ar?" | a situação daquela página: no ar, título, Google, tecnologia |
 | "essa página aparece no Google?" | se ela está liberada ou bloqueada para o Google |
 | "quero incluir o domínio novo.uniguacu.com.br" | um e-mail pronto pedindo a inclusão |
 
