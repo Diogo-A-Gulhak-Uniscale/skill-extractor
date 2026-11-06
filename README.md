@@ -54,6 +54,8 @@ No macOS o fluxo é o mesmo, com `brew install git gh` no passo 2.
 
 ## Uso
 
+- "quais domínios vocês monitoram?": lista os domínios do inventário, com a última análise de cada um;
+- "quero incluir o domínio X": monta um e-mail já preenchido para quem mantém o Extractor; é só clicar no link e enviar. Depois de incluído, o domínio aparece na atualização seguinte;
 - "relatório de todos os domínios": resumo no chat, com menu para abrir o relatório com timbrado;
 - "me manda tudo o que o domínio X tem": resposta pronta no chat (indicadores e páginas) e, abaixo, um menu de exportação numerado: 1 relatório com timbrado (abre no navegador), 2 planilha de todas as páginas, 3 só páginas com erro, 4 ainda não analisadas, 5 limites de coleta. Responda com o número; a planilha é copiada para Downloads e o caminho é informado;
 - "quais páginas do X estão com 404?" / "essa URL está ok?": consulta o inventário do domínio;
@@ -61,11 +63,11 @@ No macOS o fluxo é o mesmo, com `brew install git gh` no passo 2.
 
 Toda resposta começa com a data do dado. Se o dado tiver mais de 96 horas, a resposta avisa que está atrasado.
 
-Por trás, a skill roda um comando só, `extractor-consulta`, que vem com o plugin: confere quem
+Por trás, a skill roda um comando só, `extractor-consulta` (em `skills/extractor/scripts/`), que vem com o plugin: confere quem
 publicou, baixa o pacote quando ele muda e devolve a resposta pronta. Por isso cada pergunta leva
-poucos segundos e gasta pouco da sua cota do Claude (a skill responde no modelo Sonnet). Se o
-Claude Code pedir permissão para rodar `extractor-consulta`, escolha a opção de não perguntar de
-novo.
+poucos segundos e gasta pouco da sua cota do Claude (a skill responde no modelo Sonnet). Na primeira
+pergunta o Claude Code pede para usar a skill do Extractor: aprove, e o comando roda sem novas
+perguntas.
 
 ## Erros comuns
 
@@ -76,7 +78,7 @@ novo.
 | "pacote não veio do publicador oficial" | A Release não foi publicada pela conta esperada | Avise quem mantém o Extractor |
 | "atualize o plugin" | O formato do pacote mudou | `claude plugin update skill-extractor@skill-extractor` |
 | "varrer agora" recusado | Só quem mantém o Extractor pode disparar | Aguarde a atualização automática |
-| `extractor-consulta: command not found` | Plugin desatualizado ou Claude Code sem reiniciar | `claude plugin update skill-extractor@skill-extractor` e reabra o Claude Code |
+| O Claude não acha o comando do Extractor | Plugin desatualizado ou Claude Code sem reiniciar | `claude plugin update skill-extractor@skill-extractor` e reabra o Claude Code |
 
 ## Privacidade
 

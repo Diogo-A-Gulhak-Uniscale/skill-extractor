@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # extractor-consulta — responde pelo inventário que o Extractor da UniScale publica, numa chamada só.
 #
+#   extractor-consulta dominios                         domínios monitorados e como pedir um novo
 #   extractor-consulta dominio <host>                   resposta pronta do domínio + menu de exportação
 #   extractor-consulta panorama                         todos os domínios + menu
 #   extractor-consulta erros <host>                     páginas com erro
 #   extractor-consulta pagina <host> <url-ou-caminho>   situação de uma página
 #   extractor-consulta detalhe <host>                   resumo na linguagem de operação
 #   extractor-consulta exportar <host|panorama> <1-5>   abre o relatório ou salva a planilha em Downloads
+#   extractor-consulta pedido <host> [motivo]           e-mail pronto pedindo a inclusão de um domínio
 #
 # Só lê o pacote publicado; nunca acessa o site. Confere o autor da publicação, guarda o pacote em
 # ~/.skill-extractor/<tag> (baixa só quando muda) e põe os avisos de dado atrasado antes do conteúdo.
@@ -16,17 +18,18 @@ set -uo pipefail
 REPO="Diogo-A-Gulhak-Uniscale/skill-extractor"
 PUBLISHER="Diogo-A-Gulhak-Uniscale"
 STALE_SECONDS=$((96 * 3600))
+REQUEST_EMAIL="diogo.arthur@uniscale.tec.br"
 
 fail() { printf 'ERRO: %s\n' "$*"; exit 1; }
-usage() { fail "uso: extractor-consulta dominio|panorama|erros|pagina|detalhe|exportar ..."; }
+usage() { fail "uso: extractor-consulta dominios|dominio|panorama|erros|pagina|detalhe|exportar|pedido ..."; }
 
 cmd=${1:-}
 [ -n "$cmd" ] || usage
 shift
 case $cmd in
-  dominio|erros|detalhe) [ $# -ge 1 ] || usage ;;
+  dominio|erros|detalhe|pedido) [ $# -ge 1 ] || usage ;;
   pagina|exportar) [ $# -ge 2 ] || usage ;;
-  panorama) ;;
+  panorama|dominios) ;;
   *) usage ;;
 esac
 
@@ -110,9 +113,20 @@ resolve_host() {
   done
 }
 
+domain_table() {
+  local h n
+  n=$(grep -c . <<<"$HOSTS")
+  printf '**%s monitorados pelo Extractor**\n\n| Domínio | Última análise | Resultado |\n|---|---|---|\n' \
+    "$([ "$n" -eq 1 ] && echo '1 domínio' || echo "$n domínios")"
+  while IFS= read -r h; do
+    printf '| %s | %s | %s |\n' "$h" "$(cell "$(dom "$h" lastScanLabel)")" "$(cell "$(dom "$h" lastScanOutcomeLabel)")"
+  done <<<"$HOSTS"
+  printf '\nQuer incluir um domínio ou subdomínio? Peça aqui mesmo (por exemplo: "quero incluir o domínio exemplo.com.br") que eu preparo o pedido por e-mail para quem mantém o Extractor.\n'
+}
+
 not_monitored() {
-  printf 'O domínio %s não é monitorado pelo Extractor.\n\nDomínios monitorados:\n' "$1"
-  sed 's/^/- /' <<<"$HOSTS"
+  printf 'O domínio %s não é monitorado pelo Extractor.\n\n' "$1"
+  domain_table
   exit 0
 }
 
@@ -146,6 +160,11 @@ cmd_dominio() {
   dom_warning "$host"
   cat "$DIR/$host.chat.md"
   printf '%s\n' "$DOMAIN_MENU"
+}
+
+cmd_dominios() {
+  pkg_warning
+  domain_table
 }
 
 cmd_panorama() {
@@ -268,11 +287,41 @@ cmd_exportar() {
   fi
 }
 
+urlenc() {
+  local LC_ALL=C h o=""
+  for h in $(printf '%s' "$1" | od -An -tx1 -v); do
+    case $h in
+      2d|2e|5f|7e|3[0-9]|4[1-9a-f]|5[0-9a]|6[1-9a-f]|7[0-9a]) o+=$(printf "\x$h") ;;
+      *) o+="%${h^^}" ;;
+    esac
+  done
+  printf '%s' "$o"
+}
+
+cmd_pedido() {
+  local host motivo subject body
+  host=$(norm_host "$1")
+  shift
+  motivo=${*:-}
+  [[ "$host" =~ ^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$ ]] || fail "\"$host\" não parece um domínio; peça algo como exemplo.com.br ou sub.exemplo.com.br."
+  if [ -n "$(resolve_host "$host")" ]; then
+    printf 'O domínio %s já é monitorado pelo Extractor. Pergunte "me mostra o %s" para ver os dados.\n' "$(resolve_host "$host")" "$host"
+    return
+  fi
+  subject="Extractor: incluir o domínio $host"
+  body="Olá! Peço a inclusão do domínio $host no Extractor."$'\n\n'"Motivo: ${motivo:-(escreva aqui)}"$'\n'"Nome e área: (escreva aqui)"$'\n\n'"Pedido feito pelo plugin do Extractor no Claude."
+  printf 'Pedido pronto. Clique no link: ele abre um e-mail já preenchido para %s, é só completar e enviar.\n\n' "$REQUEST_EMAIL"
+  printf '[Enviar pedido de inclusão de %s](mailto:%s?subject=%s&body=%s)\n\n' "$host" "$REQUEST_EMAIL" "$(urlenc "$subject")" "$(urlenc "$body")"
+  printf 'Se o link não abrir, mande um e-mail para %s com o assunto "%s". Depois de incluído, o domínio aparece na próxima atualização (dias úteis, às 10h).\n' "$REQUEST_EMAIL" "$subject"
+}
+
 case $cmd in
   dominio) cmd_dominio "$1" ;;
   panorama) cmd_panorama ;;
+  dominios) cmd_dominios ;;
   erros) cmd_erros "$1" ;;
   pagina) cmd_pagina "$1" "$2" ;;
   detalhe) cmd_detalhe "$1" ;;
   exportar) cmd_exportar "$1" "$2" ;;
+  pedido) cmd_pedido "$@" ;;
 esac

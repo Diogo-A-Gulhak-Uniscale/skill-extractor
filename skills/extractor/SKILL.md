@@ -1,15 +1,20 @@
 ---
 name: extractor
-description: 'Use quando a pessoa perguntar sobre um domínio, site, landing page ou URL — por exemplo "me manda tudo do domínio X", "o site X está no ar?", "quais páginas do X estão com erro?", "essa página aparece no Google?" —, pedir relatório de domínios ou planilha de páginas, ou pedir para varrer um domínio agora. Responde pelo inventário publicado pelo Extractor da UniScale, sem acessar o site; se o domínio não estiver no inventário, diz isso e lista os monitorados.'
+description: 'Use quando a pessoa perguntar sobre um domínio, site, landing page ou URL — por exemplo "me manda tudo do domínio X", "o site X está no ar?", "quais páginas do X estão com erro?", "essa página aparece no Google?" —, pedir relatório de domínios ou planilha de páginas, perguntar quais domínios são monitorados, pedir a inclusão de um domínio ou subdomínio, ou pedir para varrer um domínio agora. Responde pelo inventário publicado pelo Extractor da UniScale, sem acessar o site; se o domínio não estiver no inventário, diz isso e lista os monitorados.'
 model: claude-sonnet-5-5
-allowed-tools: Bash(extractor-consulta *) Bash(gh workflow run skill-publish.yml *) Bash(gh run list *) Bash(date *)
+allowed-tools: Bash(bash "${CLAUDE_SKILL_DIR}/scripts/extractor-consulta" *) Bash(gh workflow run skill-publish.yml *) Bash(gh run list *) Bash(date *)
 ---
 
 # Extractor
 
-Responde pelo pacote que o Extractor da UniScale publica no GitHub, com **um comando só**:
-`extractor-consulta` (vem com este plugin). O comando confere quem publicou, baixa o pacote só
-quando ele muda, põe os avisos de dado atrasado antes do conteúdo e devolve a resposta pronta.
+Responde pelo pacote que o Extractor da UniScale publica no GitHub, com **um comando só**, que vem
+com este plugin:
+
+    bash "${CLAUDE_SKILL_DIR}/scripts/extractor-consulta" <subcomando> [argumentos]
+
+Na tabela abaixo, `extractor-consulta` é esse comando inteiro. Ele confere quem publicou, baixa o
+pacote só quando ele muda, põe os avisos de dado atrasado antes do conteúdo e devolve a resposta
+pronta.
 
 ## Regras
 
@@ -28,6 +33,8 @@ quando ele muda, põe os avisos de dado atrasado antes do conteúdo e devolve a 
 
 | Pedido | Comando |
 | --- | --- |
+| "quais domínios vocês monitoram?", "quais sites o Extractor acompanha?" | `extractor-consulta dominios` |
+| "quero incluir / monitorar o domínio X", "dá para adicionar o subdomínio X?" | `extractor-consulta pedido X 'motivo, se a pessoa disse'` (motivo entre aspas simples, sem aspas dentro) |
 | "me manda tudo do domínio X", "me mostra o X", "como está o X?" | `extractor-consulta dominio X` |
 | "relatório de todos os domínios", "como estão os sites?" | `extractor-consulta panorama` |
 | "quais páginas do X estão com erro / 404 / fora do ar?" | `extractor-consulta erros X` |
