@@ -34,15 +34,15 @@ case $cmd in
 esac
 
 [ -n "${HOME:-}" ] || fail "HOME vazio; não sei onde guardar os dados."
-command -v gh >/dev/null 2>&1 || fail "o GitHub CLI (gh) não está instalado. Veja o passo a passo no README do plugin."
+command -v curl >/dev/null 2>&1 || fail "o curl não está instalado neste computador; avise quem mantém o Extractor."
 
 # --- a publicação mais recente, conferida antes de qualquer caminho -----------------------------------
-meta=$(gh release view -R "$REPO" --json tagName,author --jq '.tagName + " " + .author.login' 2>/dev/null) \
-  || fail "não consegui ler a publicação. Confira o login ('gh auth status') e o acesso ao repositório $REPO."
-TAG=${meta%% *}
-AUTHOR=${meta#* }
+# O nome vem do redirecionamento público de releases/latest, que não gasta a cota da API do GitHub.
+GH="https://github.com/$REPO"
+TAG=$(curl -fsSLI -o /dev/null -w '%{url_effective}' "$GH/releases/latest" 2>/dev/null) \
+  || fail "não consegui ler a publicação dos dados. Confira a internet e tente de novo."
+TAG=${TAG##*/releases/tag/}
 [[ "$TAG" =~ ^[A-Za-z0-9][A-Za-z0-9.-]*$ && "$TAG" != *..* ]] || fail "a publicação tem um nome inválido ($TAG); não vou usar."
-[ "$AUTHOR" = "$PUBLISHER" ] || fail "a publicação mais recente não veio de $PUBLISHER (veio de $AUTHOR); não vou usar esses dados."
 
 DIR="$HOME/.skill-extractor/$TAG"
 M="$DIR/manifest.json"
@@ -56,8 +56,18 @@ complete() {
 }
 
 if ! complete; then
+  # O autor é conferido só quando o pacote muda: a API anônima do GitHub tem limite por hora.
+  author=$(curl -fsS "https://api.github.com/repos/$REPO/releases/tags/$TAG" 2>/dev/null | tr -d ' \r\n' \
+    | grep -o '"author":{"login":"[^"]*"' | head -1 | sed 's/.*"login":"//; s/"$//')
+  [ -n "$author" ] || fail "não consegui conferir quem publicou os dados; tente de novo em alguns minutos."
+  [ "$author" = "$PUBLISHER" ] || fail "a publicação mais recente não veio de $PUBLISHER (veio de $author); não vou usar esses dados."
   mkdir -p "$DIR"
-  gh release download "$TAG" -R "$REPO" -D "$DIR" --clobber >/dev/null 2>&1 || fail "não consegui baixar a publicação $TAG."
+  curl -fsSL -o "$M" "$GH/releases/download/$TAG/manifest.json" 2>/dev/null || fail "não consegui baixar a publicação $TAG."
+  args=()
+  for f in $(grep -oE '"[^"/]+\.(md|jsonl|csv|html)"' "$M" | tr -d '"'); do
+    args+=(-o "$DIR/$f" "$GH/releases/download/$TAG/$f")
+  done
+  curl -fsSL --parallel --parallel-max 8 "${args[@]}" 2>/dev/null || fail "não consegui baixar a publicação $TAG."
   complete || fail "a publicação $TAG veio incompleta; tente de novo em instantes."
 fi
 grep -q '"schemaVersion": 1,' "$M" || fail "os dados estão num formato novo. Atualize o plugin: claude plugin update skill-extractor@skill-extractor"

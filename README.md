@@ -8,49 +8,32 @@ Ele só baixa e lê o pacote de dados que o Extractor publica nos dias úteis, �
 
 ## Pré-requisitos
 
-`git` e `gh` (GitHub CLI), com `gh` autenticado numa conta que tenha acesso a este repositório. O repositório é privado.
+Só o Claude Code. Não precisa de conta no GitHub, de login nem de acesso a repositório. No Windows,
+o Claude Code usa o Git for Windows; se ele ainda não estiver instalado, rode `winget install Git.Git`
+no PowerShell e reabra o terminal.
 
-## Passo a passo no Windows, do zero
+## Instalação
 
-No PowerShell:
-
-**1. Peça acesso.** O dono do repositório precisa te adicionar em Settings, Collaborators. Sem isso o passo 4 falha ao clonar.
-
-**2. Instale o que falta.** Se algum já estiver instalado, o comando avisa e segue.
-
-```powershell
-winget install Git.Git
-winget install GitHub.cli
-```
-
-Feche e reabra o PowerShell para o `PATH` atualizar.
-
-**3. Autentique no GitHub.**
-
-```powershell
-gh auth login
-```
-
-Responda **GitHub.com**, **HTTPS**, **sim** para "Authenticate Git with your GitHub credentials", e conclua no navegador.
-
-**4. Instale o plugin.**
+No terminal:
 
 ```powershell
 claude plugin marketplace add Diogo-A-Gulhak-Uniscale/skill-extractor
 claude plugin install skill-extractor@skill-extractor
 ```
 
-O primeiro nome é o plugin, o segundo é o marketplace; ambos são `skill-extractor`.
+O primeiro nome é o plugin, o segundo é o marketplace; ambos são `skill-extractor`. Dentro do
+Claude Code dá no mesmo: `/plugin marketplace add Diogo-A-Gulhak-Uniscale/skill-extractor` e
+`/plugin install skill-extractor@skill-extractor`.
 
-**5. Pergunte.** Abra o Claude Code com `claude` e escreva, por exemplo:
+No Cowork o plugin ainda não foi testado.
+
+Depois, abra o Claude Code com `claude` e escreva, por exemplo:
 
 ```text
 me mostra o domínio pos.faculdadeuniguacu.com.br
 ```
 
 Na primeira pergunta o plugin baixa o pacote do dia para `~/.skill-extractor/`. Nas seguintes ele reaproveita, até sair uma Release nova.
-
-No macOS o fluxo é o mesmo, com `brew install git gh` no passo 2.
 
 ## Uso
 
@@ -65,7 +48,7 @@ Toda resposta começa com a data do dado. Se o dado tiver mais de 96 horas, a re
 
 Por trás, a skill roda um comando só, `extractor-consulta` (em `skills/extractor/scripts/`), que vem com o plugin: confere quem
 publicou, baixa o pacote quando ele muda e devolve a resposta pronta. Por isso cada pergunta leva
-poucos segundos e gasta pouco da sua cota do Claude (a skill responde no modelo Sonnet). Na primeira
+poucos segundos e gasta pouco da sua cota do Claude. Na primeira
 pergunta o Claude Code pede para usar a skill do Extractor: aprove, e o comando roda sem novas
 perguntas.
 
@@ -73,13 +56,16 @@ perguntas.
 
 | O que aparece | O que é | O que fazer |
 | --- | --- | --- |
-| Falha ao clonar, ou pedido de usuário e senha | Sem acesso ao repositório, ou Git não autenticado | Refaça os passos 1 e 3 |
-| `gh` não é reconhecido | GitHub CLI fora do `PATH` | Reabra o terminal; se persistir, reinstale |
-| "pacote não veio do publicador oficial" | A Release não foi publicada pela conta esperada | Avise quem mantém o Extractor |
+| "não consegui ler a publicação dos dados" | Sem internet, ou a rede bloqueia `github.com` | Confira a conexão; na rede da empresa, peça a liberação de `github.com` e `api.github.com` |
+| "a publicação mais recente não veio de Diogo-A-Gulhak-Uniscale" | A Release não foi publicada pela conta esperada | Avise quem mantém o Extractor |
 | "atualize o plugin" | O formato do pacote mudou | `claude plugin update skill-extractor@skill-extractor` |
 | "varrer agora" recusado | Só quem mantém o Extractor pode disparar | Aguarde a atualização automática |
 | O Claude não acha o comando do Extractor | Plugin desatualizado ou Claude Code sem reiniciar | `claude plugin update skill-extractor@skill-extractor` e reabra o Claude Code |
 
 ## Privacidade
+
+Este repositório e os dados que ele publica são públicos: são os números do inventário em linguagem
+de negócio, os mesmos que o Extractor Insights mostra sem login. Diagnóstico técnico da coleta não
+entra no pacote.
 
 O conteúdo lido é enviado à API do Claude como parte da conversa. Os arquivos ficam em `~/.skill-extractor/` e em `~/Downloads/` (CSVs que você pedir).
