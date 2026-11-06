@@ -9,6 +9,7 @@
 #   extractor-consulta detalhe <host>                   resumo na linguagem de operação
 #   extractor-consulta exportar <host|panorama> <1-5>   abre o relatório ou salva a planilha em Downloads
 #   extractor-consulta pedido <host> [motivo]           e-mail pronto pedindo a inclusão de um domínio
+#   extractor-consulta ajuda                            o que dá para perguntar (não baixa nada)
 #
 # Só lê o pacote publicado; nunca acessa o site. Confere o autor da publicação, guarda o pacote em
 # ~/.skill-extractor/<tag> (baixa só quando muda) e põe os avisos de dado atrasado antes do conteúdo.
@@ -21,7 +22,7 @@ STALE_SECONDS=$((96 * 3600))
 REQUEST_EMAIL="diogo.arthur@uniscale.tec.br"
 
 fail() { printf 'ERRO: %s\n' "$*"; exit 1; }
-usage() { fail "uso: extractor-consulta dominios|dominio|panorama|erros|pagina|detalhe|exportar|pedido ..."; }
+usage() { fail "uso: extractor-consulta ajuda|dominios|dominio|panorama|erros|pagina|detalhe|exportar|pedido ..."; }
 
 cmd=${1:-}
 [ -n "$cmd" ] || usage
@@ -29,9 +30,32 @@ shift
 case $cmd in
   dominio|erros|detalhe|pedido) [ $# -ge 1 ] || usage ;;
   pagina|exportar) [ $# -ge 2 ] || usage ;;
-  panorama|dominios) ;;
+  panorama|dominios|ajuda) ;;
   *) usage ;;
 esac
+
+if [ "$cmd" = ajuda ]; then
+  cat <<'EOF'
+**O que o Extractor responde aqui no chat**
+
+| Pergunte | O que vem |
+|---|---|
+| "quais domínios vocês monitoram?" | a lista dos domínios, com a última análise de cada um |
+| "me mostra o domínio X" | indicadores, as páginas (com erro primeiro) e o menu de exportação |
+| "relatório de todos os domínios" | o panorama de todos e o relatório com timbrado, que abre no navegador |
+| "quais páginas do X estão com erro?" | as páginas que devolvem erro na última análise |
+| "a página Y está no ar?", "Y aparece no Google?" | a situação daquela página |
+| "quero incluir o domínio X" | um e-mail pronto pedindo a inclusão, é só enviar |
+
+Depois de ver um domínio, responda com o número do menu para exportar: relatório com timbrado ou
+planilhas (todas as páginas, só as com erro, as ainda não analisadas, os limites de coleta). As
+planilhas vão para a pasta Downloads.
+
+Os dados são atualizados em dias úteis, às 10h (horário de Brasília). Nada acessa o site na hora da
+pergunta: a resposta vem da última análise do Extractor, e a data dela aparece em toda resposta.
+EOF
+  exit 0
+fi
 
 [ -n "${HOME:-}" ] || fail "HOME vazio; não sei onde guardar os dados."
 command -v curl >/dev/null 2>&1 || fail "o curl não está instalado neste computador; avise quem mantém o Extractor."

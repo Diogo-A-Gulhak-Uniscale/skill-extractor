@@ -1,71 +1,116 @@
-# skill-extractor
+# Extractor no Claude
 
-## O que é
+Pergunte no chat do Claude sobre os sites da UniScale e da UniGuaçu: quais páginas existem, quais
+estão no ar, quais estão com erro, quais aparecem no Google. A resposta vem pronta, em tabela, com
+opção de baixar planilha ou abrir um relatório com o timbrado da UniScale.
 
-Plugin do Claude Code que responde, no chat, perguntas sobre os domínios e as páginas da UniScale monitorados pelo Extractor. Exemplos: "me mostra o domínio X", "relatório de todos os domínios", "quais páginas do X estão com 404?", "essa URL está ok?". Também abre o relatório visual, entrega planilhas (CSV) e, para quem mantém o Extractor, dispara "varrer agora".
+Os dados vêm do **Extractor**, a ferramenta interna que analisa os sites em dias úteis, às 10h
+(horário de Brasília). Nada acessa o site na hora da pergunta: a resposta é a última análise, e a
+data dela aparece em toda resposta.
 
-Ele só baixa e lê o pacote de dados que o Extractor publica nos dias úteis, às 10h (Brasília). Não precisa de Node nem de Docker.
+## Instalar (2 minutos)
 
-## Pré-requisitos
+Você precisa do **Claude Code**. Não precisa de conta no GitHub nem de login em nada além do Claude.
 
-Só o Claude Code. Não precisa de conta no GitHub, de login nem de acesso a repositório. No Windows,
-o Claude Code usa o Git for Windows; se ele ainda não estiver instalado, rode `winget install Git.Git`
-no PowerShell e reabra o terminal.
+1. No Windows, se ainda não tiver o Git for Windows (o Claude Code usa), abra o PowerShell e rode
+   `winget install Git.Git`. Depois feche e abra o terminal de novo.
+2. No terminal, rode os dois comandos:
 
-## Instalação
+   ```
+   claude plugin marketplace add Diogo-A-Gulhak-Uniscale/skill-extractor
+   claude plugin install skill-extractor@skill-extractor
+   ```
 
-No terminal:
+3. Abra o Claude Code (`claude`) e pergunte: **o que você sabe fazer com o Extractor?**
 
-```powershell
-claude plugin marketplace add Diogo-A-Gulhak-Uniscale/skill-extractor
-claude plugin install skill-extractor@skill-extractor
-```
+Na primeira pergunta, o Claude Code pede autorização para usar a skill do Extractor. Aprove: daí em
+diante ela roda sem novas perguntas.
 
-O primeiro nome é o plugin, o segundo é o marketplace; ambos são `skill-extractor`. Dentro do
-Claude Code dá no mesmo: `/plugin marketplace add Diogo-A-Gulhak-Uniscale/skill-extractor` e
-`/plugin install skill-extractor@skill-extractor`.
+Dentro do Claude Code, o passo 2 também funciona como `/plugin marketplace add
+Diogo-A-Gulhak-Uniscale/skill-extractor` e `/plugin install skill-extractor@skill-extractor`.
 
-No Cowork o plugin ainda não foi testado.
+## O que perguntar
 
-Depois, abra o Claude Code com `claude` e escreva, por exemplo:
+Escreva do seu jeito; estes são exemplos.
 
-```text
-me mostra o domínio pos.faculdadeuniguacu.com.br
-```
+| Pergunte | O que vem |
+| --- | --- |
+| "quais domínios vocês monitoram?" | a lista dos domínios, com a data e o resultado da última análise |
+| "me mostra o domínio www.uniguacu.com.br" | indicadores do domínio, as páginas (com erro primeiro) e o menu de exportação |
+| "relatório de todos os domínios" | o panorama de todos e o relatório com timbrado |
+| "quais páginas do uniguacu.com.br estão com erro?" | as páginas que devolvem erro na última análise |
+| "a página https://www.uniguacu.com.br/vestibular está no ar?" | a situação daquela página: no ar, título, Google, tecnologia |
+| "essa página aparece no Google?" | se ela está liberada ou bloqueada para o Google |
+| "quero incluir o domínio novo.uniguacu.com.br" | um e-mail pronto pedindo a inclusão |
 
-Na primeira pergunta o plugin baixa o pacote do dia para `~/.skill-extractor/`. Nas seguintes ele reaproveita, até sair uma Release nova.
+O domínio pode ir com ou sem `www`, com `https://` ou com o caminho da página.
 
-## Uso
+### O que cada indicador quer dizer
 
-- "quais domínios vocês monitoram?": lista os domínios do inventário, com a última análise de cada um;
-- "quero incluir o domínio X": monta um e-mail já preenchido para quem mantém o Extractor; é só clicar no link e enviar. Depois de incluído, o domínio aparece na atualização seguinte;
-- "relatório de todos os domínios": resumo no chat, com menu para abrir o relatório com timbrado;
-- "me manda tudo o que o domínio X tem": resposta pronta no chat (indicadores e páginas) e, abaixo, um menu de exportação numerado: 1 relatório com timbrado (abre no navegador), 2 planilha de todas as páginas, 3 só páginas com erro, 4 ainda não analisadas, 5 limites de coleta. Responda com o número; a planilha é copiada para Downloads e o caminho é informado;
-- "quais páginas do X estão com 404?" / "essa URL está ok?": consulta o inventário do domínio;
-- "varre o X agora": dispara uma nova coleta. Só funciona para quem mantém o Extractor; para os demais, a próxima atualização é no dia útil seguinte, às 10h.
+- **No ar**: a página respondeu normalmente na última análise.
+- **Com erro**: a página devolveu erro (por exemplo, página não encontrada).
+- **Ainda não analisadas**: o Extractor achou a página, mas ainda não conseguiu confirmar a situação.
+- **Liberadas para o Google / Bloqueadas (noindex)**: se a página permite ou não aparecer na busca.
+- **Limites de coleta**: o site limitou o acesso do Extractor naquela hora. Isso **não** quer dizer
+  que a página está quebrada.
 
-Toda resposta começa com a data do dado. Se o dado tiver mais de 96 horas, a resposta avisa que está atrasado.
+## Exportar
 
-Por trás, a skill roda um comando só, `extractor-consulta` (em `skills/extractor/scripts/`), que vem com o plugin: confere quem
-publicou, baixa o pacote quando ele muda e devolve a resposta pronta. Por isso cada pergunta leva
-poucos segundos e gasta pouco da sua cota do Claude. Na primeira
-pergunta o Claude Code pede para usar a skill do Extractor: aprove, e o comando roda sem novas
-perguntas.
+Depois de ver um domínio, o Claude mostra um menu numerado. Responda só com o número:
 
-## Erros comuns
+1. **Relatório com timbrado**: abre no navegador (dá para imprimir ou salvar em PDF).
+2. **Planilha de todas as páginas**.
+3. **Só as páginas com erro**.
+4. **As ainda não analisadas**.
+5. **Os limites de coleta**.
 
-| O que aparece | O que é | O que fazer |
-| --- | --- | --- |
-| "não consegui ler a publicação dos dados" | Sem internet, ou a rede bloqueia `github.com` | Confira a conexão; na rede da empresa, peça a liberação de `github.com` e `api.github.com` |
-| "a publicação mais recente não veio de Diogo-A-Gulhak-Uniscale" | A Release não foi publicada pela conta esperada | Avise quem mantém o Extractor |
-| "atualize o plugin" | O formato do pacote mudou | `claude plugin update skill-extractor@skill-extractor` |
-| "varrer agora" recusado | Só quem mantém o Extractor pode disparar | Aguarde a atualização automática |
-| O Claude não acha o comando do Extractor | Plugin desatualizado ou Claude Code sem reiniciar | `claude plugin update skill-extractor@skill-extractor` e reabra o Claude Code |
+As planilhas vão para a pasta **Downloads** e abrem no Excel. No relatório de todos os domínios, a
+opção é só a 1.
 
-## Privacidade
+## Domínio que não está na lista
 
-Este repositório e os dados que ele publica são públicos: são os números do inventário em linguagem
-de negócio, os mesmos que o Extractor Insights mostra sem login. Diagnóstico técnico da coleta não
-entra no pacote.
+Pergunte "quais domínios vocês monitoram?" para ver a lista. Se o site que você precisa não está
+nela, diga "quero incluir o domínio X" (pode dizer o motivo). O Claude monta um e-mail já preenchido
+para quem mantém o Extractor; é só clicar no link e enviar. Depois de incluído, o domínio aparece na
+atualização seguinte.
 
-O conteúdo lido é enviado à API do Claude como parte da conversa. Os arquivos ficam em `~/.skill-extractor/` e em `~/Downloads/` (CSVs que você pedir).
+## Atualização dos dados
+
+- Automática, em dias úteis, às 10h (Brasília).
+- Se o dado tiver mais de 4 dias, a resposta começa com um aviso de atraso. Avise quem mantém o
+  Extractor.
+- "Varre o domínio X agora" só funciona para quem mantém o Extractor.
+
+## Problemas comuns
+
+| O que aparece | O que fazer |
+| --- | --- |
+| "não consegui ler a publicação dos dados" | Confira a internet. Na rede da empresa, peça a liberação de `github.com` e `api.github.com`. |
+| "não consegui conferir quem publicou os dados" | Espere alguns minutos e pergunte de novo. |
+| "a publicação mais recente não veio de Diogo-A-Gulhak-Uniscale" | Não use os dados; avise quem mantém o Extractor. |
+| "os dados estão num formato novo" | Rode `claude plugin update skill-extractor@skill-extractor` e reabra o Claude Code. |
+| O Claude não reconhece a pergunta ou não acha o comando do Extractor | Rode o mesmo `claude plugin update` e reabra o Claude Code. |
+| O link do e-mail de pedido não abre | Mande um e-mail para diogo.arthur@uniscale.tec.br com o domínio e o motivo. |
+
+Para reportar um problema: o que você perguntou, o que veio (um print ajuda) e o que esperava, para
+diogo.arthur@uniscale.tec.br.
+
+## Privacidade e custo
+
+- Este repositório e os dados são públicos: são os números do inventário em linguagem de negócio, os
+  mesmos que o Extractor Insights mostra sem login. Diagnóstico técnico da coleta não entra.
+- O que o plugin lê vai para o Claude como parte da conversa. Os arquivos ficam em
+  `~/.skill-extractor/` (dados do dia) e em `~/Downloads/` (planilhas que você pedir).
+- Cada pergunta leva poucos segundos e gasta pouco da sua cota do Claude. A coleta roda numa máquina
+  da UniScale, sem custo de servidor.
+
+## Teste guiado
+
+Roteiro com o resultado esperado de cada pergunta: [`docs/roteiro-de-teste.md`](docs/roteiro-de-teste.md).
+
+## Para quem mantém
+
+A publicação, o agendamento e a inclusão de domínios estão no runbook do Extractor
+(`docs/operations/skill-publish.md`, no repositório do Extractor). O plugin roda um comando só,
+`skills/extractor/scripts/extractor-consulta`; os arquivos do pacote estão descritos em
+`skills/extractor/references/arquivos.md`.

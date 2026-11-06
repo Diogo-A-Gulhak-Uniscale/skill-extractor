@@ -1,6 +1,6 @@
 {
   "name": "skill-extractor",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Pergunte no chat sobre os domínios e as páginas da UniScale: panorama, problemas, relatório e planilhas, a partir do pacote de dados diário do Extractor.",
   "author": { "name": "UniScale" }
 }

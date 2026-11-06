@@ -1,6 +1,6 @@
 ---
 name: extractor
-description: 'Use quando a pessoa perguntar sobre um domínio, site, landing page ou URL — por exemplo "me manda tudo do domínio X", "o site X está no ar?", "quais páginas do X estão com erro?", "essa página aparece no Google?" —, pedir relatório de domínios ou planilha de páginas, perguntar quais domínios são monitorados, pedir a inclusão de um domínio ou subdomínio, ou pedir para varrer um domínio agora. Responde pelo inventário publicado pelo Extractor da UniScale, sem acessar o site; se o domínio não estiver no inventário, diz isso e lista os monitorados.'
+description: 'Use quando a pessoa perguntar sobre um domínio, site, landing page ou URL — por exemplo "me manda tudo do domínio X", "o site X está no ar?", "quais páginas do X estão com erro?", "essa página aparece no Google?" —, pedir relatório de domínios ou planilha de páginas, perguntar o que dá para fazer com o Extractor ou quais domínios são monitorados, pedir a inclusão de um domínio ou subdomínio, ou pedir para varrer um domínio agora. Responde pelo inventário publicado pelo Extractor da UniScale, sem acessar o site; se o domínio não estiver no inventário, diz isso e lista os monitorados.'
 model: claude-sonnet-5-5
 allowed-tools: Bash(bash "${CLAUDE_SKILL_DIR}/scripts/extractor-consulta" *) Bash(gh workflow run skill-publish.yml *) Bash(gh run list *) Bash(date *)
 ---
@@ -33,6 +33,7 @@ pronta.
 
 | Pedido | Comando |
 | --- | --- |
+| "o que você sabe fazer com o Extractor?", "como eu uso?", "o que posso perguntar?" | `extractor-consulta ajuda` |
 | "quais domínios vocês monitoram?", "quais sites o Extractor acompanha?" | `extractor-consulta dominios` |
 | "quero incluir / monitorar o domínio X", "dá para adicionar o subdomínio X?" | `extractor-consulta pedido X 'motivo, se a pessoa disse'` (motivo entre aspas simples, sem aspas dentro) |
 | "me manda tudo do domínio X", "me mostra o X", "como está o X?" | `extractor-consulta dominio X` |
@@ -55,8 +56,8 @@ aparece depois que a execução termina e publica os dados novos.
 
 Espere alguns segundos antes do `gh run list` e confirme que o `createdAt` é posterior ao horário
 do `date`. Se for, mostre o link da execução; se não for, aponte
-https://github.com/Kadjow/extractor/actions/workflows/skill-publish.yml. Se o `gh` recusar por
-permissão, diga que só quem mantém o Extractor dispara e que a atualização automática é em dia
+https://github.com/Kadjow/extractor/actions/workflows/skill-publish.yml. Se o `gh` não existir neste
+computador ou recusar por permissão, diga que só quem mantém o Extractor dispara e que a atualização automática é em dia
 útil, às 10h (Brasília).
 
 Arquivos do pacote e o que cada um responde: `references/arquivos.md`.
